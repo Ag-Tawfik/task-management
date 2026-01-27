@@ -13,6 +13,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Auth;
 
 class UserResource extends Resource
 {
@@ -41,7 +42,9 @@ class UserResource extends Resource
 
     public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
     {
-        return parent::getEloquentQuery()->withCount('tasks');
+        return parent::getEloquentQuery()
+            ->withCount('tasks')
+            ->when(Auth::id(), fn ($query) => $query->whereKeyNot(Auth::id()));
     }
 
     public static function getPages(): array
