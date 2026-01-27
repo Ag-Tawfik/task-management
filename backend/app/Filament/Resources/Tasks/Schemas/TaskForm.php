@@ -7,6 +7,7 @@ use Filament\Schemas\Schema;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Illuminate\Database\Eloquent\Builder;
 
 class TaskForm
 {
@@ -24,7 +25,11 @@ class TaskForm
                     ->options(TaskStatusEnum::options())
                     ->required(),
                 Select::make('user_id')
-                    ->relationship('user', 'name')
+                    ->relationship(
+                        name: 'user',
+                        titleAttribute: 'name',
+                        modifyQueryUsing: fn (Builder $query) => $query->where('is_admin', false),
+                    )
                     ->searchable()
                     ->preload()
                     ->required(),
