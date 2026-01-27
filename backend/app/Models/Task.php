@@ -2,15 +2,17 @@
 
 namespace App\Models;
 
+use App\Enums\TaskStatusEnum;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 class Task extends Model
 {
-    public const STATUSES = ['Pending', 'In Progress', 'Completed'];
-
     protected $fillable = ['title', 'description', 'status', 'user_id'];
+    protected $casts = [
+        'status' => TaskStatusEnum::class,
+    ];
 
     public function scopeForUser(Builder $query, User|int $user): Builder
     {

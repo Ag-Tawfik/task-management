@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\StoreTaskRequest;
 use App\Http\Requests\Api\UpdateTaskRequest;
+use App\Enums\TaskStatusEnum;
 use App\Models\Task;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -30,7 +31,7 @@ class TaskController extends Controller
         $data = $request->validated();
 
         $data['user_id'] = $request->user()->id;
-        $data['status'] = $data['status'] ?? 'Pending';
+        $data['status'] = $data['status'] ?? TaskStatusEnum::Pending->value;
 
         $task = Task::create($data);
 

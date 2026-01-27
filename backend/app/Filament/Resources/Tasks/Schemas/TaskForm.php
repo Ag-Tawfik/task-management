@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Tasks\Schemas;
 
+use App\Enums\TaskStatusEnum;
 use Filament\Schemas\Schema;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -20,11 +21,7 @@ class TaskForm
                     ->nullable()
                     ->maxLength(1000),
                 Select::make('status')
-                    ->options([
-                        'Pending' => 'Pending',
-                        'In Progress' => 'In Progress',
-                        'Completed' => 'Completed',
-                    ])
+                    ->options(TaskStatusEnum::options())
                     ->required(),
                 Select::make('user_id')
                     ->relationship('user', 'name')
