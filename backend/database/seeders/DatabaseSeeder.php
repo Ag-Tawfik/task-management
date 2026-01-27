@@ -22,7 +22,6 @@ class DatabaseSeeder extends Seeder
             ['email' => 'admin@example.com'],
             [
                 'name' => 'Admin',
-                // Will be hashed automatically via User::$casts['password' => 'hashed']
                 'password' => 'admin123',
                 'is_admin' => true,
                 'remember_token' => Str::random(10),
@@ -32,7 +31,7 @@ class DatabaseSeeder extends Seeder
         User::query()->updateOrCreate(
             ['email' => 'user@example.com'],
             [
-                'name' => 'Regular User',
+                'name' => 'User',
                 'password' => 'user123',
                 'is_admin' => false,
                 'remember_token' => Str::random(10),

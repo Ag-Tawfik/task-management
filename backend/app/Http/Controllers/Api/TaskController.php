@@ -3,8 +3,11 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
+use App\Http\Requests\Api\StoreTaskRequest;
+use App\Http\Requests\Api\UpdateTaskRequest;
 use App\Models\Task;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 
 class TaskController extends Controller
 {
@@ -14,7 +17,7 @@ class TaskController extends Controller
     public function index(Request $request)
     {
         return Task::query()
-            ->where('user_id', $request->user()->id)
+            ->forUser($request->user())
             ->latest()
             ->get();
     }
@@ -22,18 +25,16 @@ class TaskController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(StoreTaskRequest $request)
     {
-        $data = $request->validate([
-            'title' => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string'],
-            'status' => ['nullable', 'in:Pending,In Progress,Completed'],
-        ]);
+        $data = $request->validated();
 
         $data['user_id'] = $request->user()->id;
         $data['status'] = $data['status'] ?? 'Pending';
 
-        return Task::create($data);
+        $task = Task::create($data);
+
+        return response()->json($task, Response::HTTP_CREATED);
     }
 
     /**
@@ -42,24 +43,20 @@ class TaskController extends Controller
     public function show(Request $request, string $id)
     {
         return Task::query()
-            ->where('user_id', $request->user()->id)
+            ->forUser($request->user())
             ->findOrFail($id);
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(UpdateTaskRequest $request, string $id)
     {
         $task = Task::query()
-            ->where('user_id', $request->user()->id)
+            ->forUser($request->user())
             ->findOrFail($id);
 
-        $data = $request->validate([
-            'title' => ['sometimes', 'required', 'string', 'max:255'],
-            'description' => ['sometimes', 'nullable', 'string'],
-            'status' => ['sometimes', 'required', 'in:Pending,In Progress,Completed'],
-        ]);
+        $data = $request->validated();
 
         $task->update($data);
 
@@ -72,7 +69,7 @@ class TaskController extends Controller
     public function destroy(Request $request, string $id)
     {
         $task = Task::query()
-            ->where('user_id', $request->user()->id)
+            ->forUser($request->user())
             ->findOrFail($id);
 
         $task->delete();
