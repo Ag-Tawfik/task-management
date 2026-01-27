@@ -20,9 +20,6 @@ class UserForm
                     ->required()
                     ->unique(ignoreRecord: true)
                     ->maxLength(255),
-                Checkbox::make('is_admin')
-                    ->label('Admin')
-                    ->default(false),
                 TextInput::make('password')
                     ->password()
                     ->revealable()
