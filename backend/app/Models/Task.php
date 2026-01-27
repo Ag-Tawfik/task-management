@@ -4,11 +4,14 @@ namespace App\Models;
 
 use App\Enums\TaskStatusEnum;
 use App\Models\User;
-use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
 
 class Task extends Model
 {
+    use HasFactory;
+    
     protected $fillable = ['title', 'description', 'status', 'user_id'];
     protected $casts = [
         'status' => TaskStatusEnum::class,
