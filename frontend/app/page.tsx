@@ -61,6 +61,9 @@ export default function Home() {
   const [busy, setBusy] = useState(false);
   const [hasToken, setHasToken] = useState(false);
   const [initializing, setInitializing] = useState(true);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editDescription, setEditDescription] = useState("");
 
   function restoreMeFromStorage() {
     if (typeof window === "undefined") return;
@@ -178,6 +181,39 @@ export default function Home() {
         body: JSON.stringify({ status: next }),
       })) as Task;
       setTasks((prev) => prev.map((t) => (t.id === task.id ? updated : t)));
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function startEdit(task: Task) {
+    setEditingId(task.id);
+    setEditTitle(task.title);
+    setEditDescription(task.description ?? "");
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setEditTitle("");
+    setEditDescription("");
+  }
+
+  async function onSaveEdit(task: Task) {
+    setBusy(true);
+    setError(null);
+    try {
+      const updated = (await apiFetch(`/tasks/${task.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          title: editTitle,
+          description: editDescription.trim() ? editDescription : null,
+        }),
+      })) as Task;
+
+      setTasks((prev) => prev.map((t) => (t.id === task.id ? updated : t)));
+      cancelEdit();
     } catch (e: any) {
       setError(e.message);
     } finally {
@@ -367,19 +403,73 @@ export default function Home() {
                             <div className="font-semibold">{task.title}</div>
                             <StatusBadge value={task.status} />
                           </div>
-                          {task.description ? (
+
+                          {editingId === task.id ? (
+                            <div className="space-y-3">
+                              <label className="block space-y-1">
+                                <div className="text-xs font-medium text-zinc-300">Title</div>
+                                <input
+                                  value={editTitle}
+                                  onChange={(e) => setEditTitle(e.target.value)}
+                                  className="w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-zinc-400"
+                                  disabled={busy}
+                                />
+                              </label>
+
+                              <label className="block space-y-1">
+                                <div className="text-xs font-medium text-zinc-300">Description (optional)</div>
+                                <textarea
+                                  value={editDescription}
+                                  onChange={(e) => setEditDescription(e.target.value)}
+                                  className="w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-zinc-400"
+                                  rows={3}
+                                  disabled={busy}
+                                />
+                              </label>
+
+                              <div className="flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => onSaveEdit(task)}
+                                  disabled={busy || !editTitle.trim()}
+                                  className="inline-flex items-center justify-center rounded-md bg-white px-3 py-1.5 text-sm font-medium text-black hover:bg-zinc-200 disabled:opacity-50"
+                                >
+                                  Save
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={cancelEdit}
+                                  disabled={busy}
+                                  className="rounded-md border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-sm hover:bg-zinc-800 disabled:opacity-50"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            </div>
+                          ) : task.description ? (
                             <div className="text-sm text-zinc-400 whitespace-pre-wrap">{task.description}</div>
                           ) : null}
                         </div>
-                        <button
-                          onClick={() => {
-                            if (confirm("Delete this task?")) onDelete(task);
-                          }}
-                          disabled={busy}
-                          className="rounded-md border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-sm hover:bg-zinc-800 disabled:opacity-50"
-                        >
-                          Delete
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => startEdit(task)}
+                            disabled={busy || editingId === task.id}
+                            className="rounded-md border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-sm hover:bg-zinc-800 disabled:opacity-50"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (confirm("Delete this task?")) onDelete(task);
+                            }}
+                            disabled={busy}
+                            className="rounded-md border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-sm hover:bg-zinc-800 disabled:opacity-50"
+                          >
+                            Delete
+                          </button>
+                        </div>
                       </div>
                       <div className="mt-4 flex items-center gap-3">
                         <div className="text-xs text-zinc-500">Update status</div>
