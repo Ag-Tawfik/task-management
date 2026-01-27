@@ -9,8 +9,5 @@ WORKDIR /var/www
 COPY . .
 RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
 
-RUN chmod +x /var/www/docker-entrypoint.sh
-
 EXPOSE 8000
-ENTRYPOINT ["/var/www/docker-entrypoint.sh"]
 CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]
