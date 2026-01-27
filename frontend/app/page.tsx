@@ -186,6 +186,22 @@ export default function Home() {
     }
   }
 
+  async function onUpdateStatus(task: Task, next: Task["status"]) {
+    setBusy(true);
+    setError(null);
+    try {
+      const updated = (await apiFetch(`/tasks/${task.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ status: next }),
+      })) as Task;
+      setTasks((prev) => prev.map((t) => (t.id === task.id ? updated : t)));
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   function openEdit(task: Task) {
     setEditTask(task);
     setEditTitle(task.title);
@@ -456,7 +472,18 @@ export default function Home() {
                             ) : null}
                           </td>
                           <td className="px-4 py-3">
-                            <StatusBadge value={task.status} />
+                            <select
+                              value={task.status}
+                              onChange={(e) => onUpdateStatus(task, e.target.value as Task["status"])}
+                              disabled={busy}
+                              className="rounded-full border border-transparent bg-zinc-900/0 px-2 py-1 text-xs font-medium text-zinc-100 ring-1 ring-zinc-700/60 hover:bg-zinc-900/40 focus:outline-none focus:ring-2 focus:ring-orange-500 disabled:opacity-60"
+                            >
+                              {STATUSES.map((s) => (
+                                <option key={s} value={s}>
+                                  {s}
+                                </option>
+                              ))}
+                            </select>
                           </td>
                           <td className="px-4 py-3 text-zinc-200">{formatDate(task.created_at)}</td>
                           <td className="px-4 py-3 text-right">
