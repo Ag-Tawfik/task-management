@@ -102,6 +102,11 @@ export default function Home() {
     setHasToken(Boolean(token));
 
     if (!token) {
+      // Dev convenience: prefill tester credentials.
+      if (process.env.NODE_ENV !== "production") {
+        setEmail((v) => v || "user@example.com");
+        setPassword((v) => v || "password");
+      }
       setInitializing(false);
       return;
     }
