@@ -42,8 +42,8 @@ async function apiFetch(path: string, init: RequestInit = {}) {
 }
 
 export default function Home() {
-  const [email, setEmail] = useState("user@example.com");
-  const [password, setPassword] = useState("user123");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [me, setMe] = useState<any>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [title, setTitle] = useState("");
