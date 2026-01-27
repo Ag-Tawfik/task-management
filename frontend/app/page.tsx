@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type SyntheticEvent } from "react";
 
 type Task = {
   id: number;
@@ -111,7 +111,7 @@ export default function Home() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function onLogin(e: React.FormEvent) {
+  async function onLogin(e: SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
     setBusy(true);
     setError(null);
@@ -149,7 +149,7 @@ export default function Home() {
     }
   }
 
-  async function onCreateTask(e: React.FormEvent) {
+  async function onCreateTask(e: SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
     setBusy(true);
     setError(null);
