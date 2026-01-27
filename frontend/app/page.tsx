@@ -12,6 +12,12 @@ type Task = {
   updated_at: string;
 };
 
+type Me = {
+  id: number;
+  name: string;
+  email: string;
+};
+
 const STATUSES: Task["status"][] = ["Pending", "In Progress", "Completed"];
 
 function apiBase(): string {
@@ -35,7 +41,9 @@ async function apiFetch(path: string, init: RequestInit = {}) {
     const message =
       (body && typeof body === "object" && "message" in body && (body as any).message) ||
       (typeof body === "string" ? body : `Request failed (${res.status})`);
-    throw new Error(message);
+    const err: any = new Error(message);
+    err.status = res.status;
+    throw err;
   }
 
   return body;
@@ -44,7 +52,7 @@ async function apiFetch(path: string, init: RequestInit = {}) {
 export default function Home() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [me, setMe] = useState<any>(null);
+  const [me, setMe] = useState<Me | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -52,11 +60,22 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [hasToken, setHasToken] = useState(false);
+  const [initializing, setInitializing] = useState(true);
+
+  function restoreMeFromStorage() {
+    if (typeof window === "undefined") return;
+    try {
+      const raw = localStorage.getItem("me");
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as Me;
+      if (parsed?.email) setMe(parsed);
+    } catch {
+      // ignore bad JSON
+    }
+  }
 
   async function load() {
     setError(null);
-    const user = await apiFetch("/me");
-    setMe(user);
     const list = await apiFetch("/tasks");
     setTasks(list as Task[]);
   }
@@ -66,9 +85,29 @@ export default function Home() {
     const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
     setHasToken(Boolean(token));
 
-    if (token) {
-      load().catch((e) => setError(e.message));
+    if (!token) {
+      setInitializing(false);
+      return;
     }
+
+    restoreMeFromStorage();
+
+    load()
+      .catch((e: any) => {
+        // If the token is invalid/expired, clear it and show the login form again.
+        if (e?.status === 401) {
+          localStorage.removeItem("token");
+          localStorage.removeItem("me");
+          setHasToken(false);
+          setMe(null);
+          setTasks([]);
+          setError("Session expired. Please sign in again.");
+          return;
+        }
+
+        setError(e?.message ?? "Failed to load session.");
+      })
+      .finally(() => setInitializing(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -82,6 +121,9 @@ export default function Home() {
         body: JSON.stringify({ email, password }),
       })) as any;
       localStorage.setItem("token", data.token);
+      localStorage.setItem("me", JSON.stringify(data.user));
+      setHasToken(true);
+      setMe(data.user as Me);
       await load();
     } catch (e: any) {
       setError(e.message);
@@ -99,6 +141,8 @@ export default function Home() {
       // ignore
     } finally {
       localStorage.removeItem("token");
+      localStorage.removeItem("me");
+      setHasToken(false);
       setMe(null);
       setTasks([]);
       setBusy(false);
@@ -196,7 +240,7 @@ export default function Home() {
           <div className="rounded-md border border-red-900/50 bg-red-950/40 p-3 text-sm text-red-200">{error}</div>
         ) : null}
 
-        {!me ? (
+        {initializing ? null : !me ? (
           <form onSubmit={onLogin} className="rounded-lg border border-zinc-800 bg-zinc-900/40 p-4 sm:p-6 space-y-4">
             <div className="flex items-center justify-between gap-3">
               <div className="text-sm font-medium">Login</div>
