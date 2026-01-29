@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\LoginRequest;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 
@@ -31,10 +32,28 @@ class AuthController extends Controller
             ], 403);
         }
 
-        $token = $user->createToken('frontend')->plainTextToken;
+        Auth::login($user);
+        $request->session()->regenerate();
 
         return response()->json([
-            'token' => $token,
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+            ],
+        ]);
+    }
+
+    public function me(Request $request)
+    {
+        /** @var User|null $user */
+        $user = $request->user();
+
+        if (! $user) {
+            return response()->json(['message' => 'Unauthenticated.'], 401);
+        }
+
+        return response()->json([
             'user' => [
                 'id' => $user->id,
                 'name' => $user->name,
@@ -45,11 +64,9 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
-        $user = $request->user();
-
-        if ($user) {
-            $user->currentAccessToken()?->delete();
-        }
+        Auth::guard('web')->logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
 
         return response()->json(['ok' => true]);
     }

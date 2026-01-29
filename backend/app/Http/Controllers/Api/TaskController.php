@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\IndexTaskRequest;
 use App\Http\Requests\Api\StoreTaskRequest;
 use App\Http\Requests\Api\UpdateTaskRequest;
 use App\Enums\TaskStatusEnum;
@@ -15,12 +16,27 @@ class TaskController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request)
+    public function index(IndexTaskRequest $request)
     {
+        $data = $request->validated();
+
+        $search = $data['search'] ?? null;
+        $sortBy = $data['sort_by'] ?? 'created_at';
+        $sortDir = $data['sort_dir'] ?? 'desc';
+        $perPage = (int) ($data['per_page'] ?? 10);
+
         return Task::query()
             ->forUser($request->user())
-            ->latest()
-            ->get();
+            ->when($search, function ($query, string $search) {
+                $like = '%'.str_replace(['%', '_'], ['\%', '\_'], $search).'%';
+
+                $query->where(function ($q) use ($like) {
+                    $q->where('title', 'like', $like)
+                        ->orWhere('description', 'like', $like);
+                });
+            })
+            ->orderBy($sortBy, $sortDir)
+            ->paginate($perPage);
     }
 
     /**
