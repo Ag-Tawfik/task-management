@@ -67,8 +67,14 @@ export default function Home() {
         per_page: q.perPage,
         page: q.page,
       });
-      const res = (await apiFetch(`/tasks${qs}`)) as any;
-      const data = Array.isArray(res?.data) ? (res.data as Task[]) : [];
+      const res = (await apiFetch(`/tasks${qs}`)) as {
+        data?: Task[];
+        total?: number;
+        last_page?: number;
+        from?: number;
+        to?: number;
+      };
+      const data = Array.isArray(res?.data) ? res.data : [];
       setTasks(data);
 
       const total = Number(res?.total ?? data.length);
@@ -82,15 +88,16 @@ export default function Home() {
         showingFrom: Number.isFinite(from) ? from : 0,
         showingTo: Number.isFinite(to) ? to : 0,
       });
-    } catch (e: any) {
-      if (e?.status === 401) {
+    } catch (e: unknown) {
+      const err = e as { status?: number; message?: string };
+      if (err?.status === 401) {
         setMe(null);
         setTasks([]);
         setPageInfo({ total: 0, totalPages: 1, showingFrom: 0, showingTo: 0 });
         setError("Session expired. Please sign in again.");
         return;
       }
-      setError(e?.message ?? "Failed to load tasks.");
+      setError(err?.message ?? "Failed to load tasks.");
     } finally {
       setLoadingTasks(false);
     }
@@ -100,9 +107,9 @@ export default function Home() {
     (async () => {
       setInitializing(true);
       try {
-        const res = (await apiFetch("/auth/me")) as any;
+        const res = (await apiFetch("/auth/me")) as { user?: Me };
         if (res?.user?.email) {
-          setMe(res.user as Me);
+          setMe(res.user);
         } else {
           setMe(null);
         }
@@ -127,11 +134,11 @@ export default function Home() {
       const data = (await apiFetch("/auth/login", {
         method: "POST",
         body: JSON.stringify({ email, password }),
-      })) as any;
-      setMe(data.user as Me);
+      })) as { user: Me };
+      setMe(data.user);
       setQuery((q) => ({ ...q, page: 1 }));
-    } catch (e: any) {
-      setError(e.message);
+    } catch (e: unknown) {
+      setError((e as { message?: string })?.message ?? "Login failed");
     } finally {
       setBusy(false);
     }
@@ -164,8 +171,8 @@ export default function Home() {
       });
       setShowNew(false);
       setQuery((q) => ({ ...q, page: 1 }));
-    } catch (e: any) {
-      setError(e.message);
+    } catch (e: unknown) {
+      setError((e as { message?: string })?.message ?? "Failed to create task");
     } finally {
       setBusy(false);
     }
@@ -184,9 +191,9 @@ export default function Home() {
           body: JSON.stringify({ status: next }),
         });
         await loadTasks(queryRef.current);
-      } catch (e: any) {
+      } catch (e: unknown) {
         setTasks(previous);
-        setError(e.message);
+        setError((e as { message?: string })?.message ?? "Failed to update status");
       } finally {
         setBusy(false);
       }
@@ -218,8 +225,8 @@ export default function Home() {
       });
       await loadTasks(queryRef.current);
       closeEdit();
-    } catch (e: any) {
-      setError(e.message);
+    } catch (e: unknown) {
+      setError((e as { message?: string })?.message ?? "Failed to save task");
     } finally {
       setBusy(false);
     }
@@ -234,8 +241,8 @@ export default function Home() {
       await ensureCsrfCookie();
       await apiFetch(`/tasks/${task.id}`, { method: "DELETE" });
       await loadTasks(queryRef.current);
-    } catch (e: any) {
-      setError(e.message);
+    } catch (e: unknown) {
+      setError((e as { message?: string })?.message ?? "Failed to delete task");
     } finally {
       setBusy(false);
     }
@@ -302,14 +309,24 @@ export default function Home() {
               onDelete={onDelete}
             />
 
-            <NewTaskModal
-              open={showNew}
-              busy={busy}
-              onClose={() => setShowNew(false)}
-              onCreate={onCreateTask}
-            />
+            {showNew && (
+              <NewTaskModal
+                key="new-task-modal"
+                busy={busy}
+                onClose={() => setShowNew(false)}
+                onCreate={onCreateTask}
+              />
+            )}
 
-            <EditTaskModal task={editTask} busy={busy} onClose={closeEdit} onSave={onSaveEdit} />
+            {editTask && (
+              <EditTaskModal
+                key={editTask.id}
+                task={editTask}
+                busy={busy}
+                onClose={closeEdit}
+                onSave={onSaveEdit}
+              />
+            )}
           </>
         )}
       </div>

@@ -5,16 +5,15 @@ import type { TaskStatus } from "@/lib/types";
 import { STATUSES, coerceTaskStatus } from "@/lib/types";
 
 export function NewTaskModal({
-  open,
   busy,
   onClose,
   onCreate,
 }: {
-  open: boolean;
   busy: boolean;
   onClose: () => void;
   onCreate: (payload: { title: string; description: string | null; status: TaskStatus }) => Promise<void>;
 }) {
+  // State is initialized with defaults - parent should use key to reset when reopening
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState<TaskStatus>("Pending");
@@ -22,16 +21,6 @@ export function NewTaskModal({
   const [showValidation, setShowValidation] = useState(false);
 
   useEffect(() => {
-    if (!open) return;
-    setTitle("");
-    setDescription("");
-    setStatus("Pending");
-    setShowValidation(false);
-  }, [open]);
-
-  useEffect(() => {
-    if (!open) return;
-
     const focusFirst = () => {
       const focusable = containerRef.current?.querySelectorAll<HTMLElement>(
         'button,[href],input,select,textarea,[tabindex]:not([tabindex="-1"])'
@@ -69,7 +58,7 @@ export function NewTaskModal({
 
     document.addEventListener("keydown", handleKey);
     return () => document.removeEventListener("keydown", handleKey);
-  }, [open, onClose]);
+  }, [onClose]);
 
   async function submit(e: SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -83,8 +72,6 @@ export function NewTaskModal({
       status,
     });
   }
-
-  if (!open) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">

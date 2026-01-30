@@ -10,28 +10,19 @@ export function EditTaskModal({
   onClose,
   onSave,
 }: {
-  task: Task | null;
+  task: Task;
   busy: boolean;
   onClose: () => void;
   onSave: (payload: { id: number; title: string; description: string | null; status: TaskStatus }) => Promise<void>;
 }) {
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [status, setStatus] = useState<TaskStatus>("Pending");
+  // Initialize state directly from task prop - parent uses key={task.id} to reset
+  const [title, setTitle] = useState(task.title);
+  const [description, setDescription] = useState(task.description ?? "");
+  const [status, setStatus] = useState<TaskStatus>(task.status);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [showValidation, setShowValidation] = useState(false);
 
   useEffect(() => {
-    if (!task) return;
-    setTitle(task.title);
-    setDescription(task.description ?? "");
-    setStatus(task.status);
-    setShowValidation(false);
-  }, [task]);
-
-  useEffect(() => {
-    if (!task) return;
-
     const focusFirst = () => {
       const focusable = containerRef.current?.querySelectorAll<HTMLElement>(
         'button,[href],input,select,textarea,[tabindex]:not([tabindex="-1"])'
@@ -69,9 +60,7 @@ export function EditTaskModal({
 
     document.addEventListener("keydown", handleKey);
     return () => document.removeEventListener("keydown", handleKey);
-  }, [task, onClose]);
-
-  if (!task) return null;
+  }, [onClose]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
