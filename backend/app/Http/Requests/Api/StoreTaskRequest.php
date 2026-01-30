@@ -17,7 +17,7 @@ class StoreTaskRequest extends FormRequest
     {
         return [
             'title' => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string'],
+            'description' => ['nullable', 'string', 'max:5000'],
             'status' => ['nullable', Rule::enum(TaskStatusEnum::class)],
         ];
     }
