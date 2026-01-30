@@ -28,11 +28,12 @@ class TaskController extends Controller
         return Task::query()
             ->forUser($request->user())
             ->when($search, function ($query, string $search) {
-                $like = '%'.str_replace(['%', '_'], ['\%', '\_'], $search).'%';
+                $escaped = str_replace(['%', '_'], ['\\%', '\\_'], $search);
+                $like = '%'.$escaped.'%';
 
                 $query->where(function ($q) use ($like) {
-                    $q->where('title', 'like', $like)
-                        ->orWhere('description', 'like', $like);
+                    $q->whereRaw('title LIKE ? ESCAPE ?', [$like, '\\'])
+                        ->orWhereRaw('description LIKE ? ESCAPE ?', [$like, '\\']);
                 });
             })
             ->orderBy($sortBy, $sortDir)
