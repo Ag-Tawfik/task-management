@@ -5,6 +5,7 @@ import { AuthForm } from "@/app/_components/AuthForm";
 import { EditTaskModal } from "@/app/_components/EditTaskModal";
 import { NewTaskModal } from "@/app/_components/NewTaskModal";
 import { TaskTable } from "@/app/_components/TaskTable";
+import { Toast } from "@/app/_components/Toast";
 import { apiFetch, buildQuery, ensureCsrfCookie } from "@/lib/api";
 import type { Me, Task, TaskStatus } from "@/lib/types";
 
@@ -170,22 +171,28 @@ export default function Home() {
     }
   }, []);
 
-  const onUpdateStatus = useCallback(async (task: Task, next: Task["status"]) => {
-    setBusy(true);
-    setError(null);
-    try {
-      await ensureCsrfCookie();
-      await apiFetch(`/tasks/${task.id}`, {
-        method: "PATCH",
-        body: JSON.stringify({ status: next }),
-      });
-      await loadTasks(queryRef.current);
-    } catch (e: any) {
-      setError(e.message);
-    } finally {
-      setBusy(false);
-    }
-  }, [loadTasks]);
+  const onUpdateStatus = useCallback(
+    async (task: Task, next: Task["status"]) => {
+      setBusy(true);
+      setError(null);
+      const previous = tasks;
+      setTasks((current) => current.map((t) => (t.id === task.id ? { ...t, status: next } : t)));
+      try {
+        await ensureCsrfCookie();
+        await apiFetch(`/tasks/${task.id}`, {
+          method: "PATCH",
+          body: JSON.stringify({ status: next }),
+        });
+        await loadTasks(queryRef.current);
+      } catch (e: any) {
+        setTasks(previous);
+        setError(e.message);
+      } finally {
+        setBusy(false);
+      }
+    },
+    [loadTasks, tasks]
+  );
 
   const openEdit = useCallback((task: Task) => {
     setEditTask(task);
@@ -272,9 +279,7 @@ export default function Home() {
           ) : null}
         </header>
 
-        {error ? (
-          <div className="rounded-md border border-red-900/50 bg-red-950/40 p-3 text-sm text-red-200">{error}</div>
-        ) : null}
+        {error ? <Toast message={error} onClose={() => setError(null)} /> : null}
 
         {initializing ? null : !me ? (
           <AuthForm
@@ -290,6 +295,7 @@ export default function Home() {
               query={query}
               pageInfo={pageInfo}
               busy={busy || loadingTasks}
+              loading={loadingTasks}
               onQueryChange={onQueryChange}
               onUpdateStatus={onUpdateStatus}
               onEdit={openEdit}

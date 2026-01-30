@@ -1,14 +1,16 @@
 "use client";
 
-import { memo } from "react";
+import { memo, useState } from "react";
 import type { Task, TaskStatus } from "@/lib/types";
-import { STATUSES } from "@/lib/types";
+import { STATUSES, coerceTaskStatus } from "@/lib/types";
+import { ConfirmDialog } from "@/app/_components/ConfirmDialog";
 
 export const TaskTable = memo(function TaskTable({
   tasks,
   query,
   pageInfo,
   busy,
+  loading,
   onQueryChange,
   onUpdateStatus,
   onEdit,
@@ -18,6 +20,7 @@ export const TaskTable = memo(function TaskTable({
   query: { search: string; sortBy: "title" | "status" | "created_at"; sortDir: "asc" | "desc"; perPage: number; page: number };
   pageInfo: { total: number; totalPages: number; showingFrom: number; showingTo: number };
   busy: boolean;
+  loading: boolean;
   onQueryChange: (next: {
     search?: string;
     sortBy?: "title" | "status" | "created_at";
@@ -29,6 +32,8 @@ export const TaskTable = memo(function TaskTable({
   onEdit: (task: Task) => void;
   onDelete: (task: Task) => void;
 }) {
+  const [confirmTask, setConfirmTask] = useState<Task | null>(null);
+
   function toggleSort(next: "title" | "status" | "created_at") {
     if (query.sortBy === next) {
       onQueryChange({ sortDir: query.sortDir === "asc" ? "desc" : "asc" });
@@ -58,7 +63,10 @@ export const TaskTable = memo(function TaskTable({
           <table className="w-full text-sm">
             <thead className="bg-zinc-900/60 text-zinc-300">
               <tr className="border-b border-zinc-800">
-                <th className="px-4 py-3 text-left">
+                <th
+                  className="px-4 py-3 text-left"
+                  aria-sort={query.sortBy === "title" ? (query.sortDir === "asc" ? "ascending" : "descending") : "none"}
+                >
                   <button
                     type="button"
                     onClick={() => toggleSort("title")}
@@ -67,7 +75,10 @@ export const TaskTable = memo(function TaskTable({
                     Title <SortIcon active={query.sortBy === "title"} dir={query.sortDir} />
                   </button>
                 </th>
-                <th className="px-4 py-3 text-left">
+                <th
+                  className="px-4 py-3 text-left"
+                  aria-sort={query.sortBy === "status" ? (query.sortDir === "asc" ? "ascending" : "descending") : "none"}
+                >
                   <button
                     type="button"
                     onClick={() => toggleSort("status")}
@@ -76,7 +87,12 @@ export const TaskTable = memo(function TaskTable({
                     Status <SortIcon active={query.sortBy === "status"} dir={query.sortDir} />
                   </button>
                 </th>
-                <th className="px-4 py-3 text-left">
+                <th
+                  className="px-4 py-3 text-left"
+                  aria-sort={
+                    query.sortBy === "created_at" ? (query.sortDir === "asc" ? "ascending" : "descending") : "none"
+                  }
+                >
                   <button
                     type="button"
                     onClick={() => toggleSort("created_at")}
@@ -91,7 +107,25 @@ export const TaskTable = memo(function TaskTable({
               </tr>
             </thead>
             <tbody>
-              {tasks.length === 0 ? (
+              {loading ? (
+                Array.from({ length: 3 }).map((_, index) => (
+                  <tr key={`loading-${index}`} className="border-b border-zinc-800 last:border-b-0">
+                    <td className="px-4 py-3">
+                      <div className="h-4 w-40 animate-pulse rounded bg-zinc-800/70" />
+                      <div className="mt-2 h-3 w-64 animate-pulse rounded bg-zinc-800/50" />
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="h-6 w-24 animate-pulse rounded-full bg-zinc-800/70" />
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="h-4 w-32 animate-pulse rounded bg-zinc-800/70" />
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <div className="ml-auto h-4 w-24 animate-pulse rounded bg-zinc-800/70" />
+                    </td>
+                  </tr>
+                ))
+              ) : tasks.length === 0 ? (
                 <tr>
                   <td colSpan={4} className="px-4 py-10 text-center text-zinc-400">
                     No results.
@@ -109,7 +143,10 @@ export const TaskTable = memo(function TaskTable({
                     <td className="px-4 py-3">
                       <select
                         value={task.status}
-                        onChange={(e) => onUpdateStatus(task, e.target.value as TaskStatus)}
+                        onChange={(e) => {
+                          const next = coerceTaskStatus(e.target.value, task.status);
+                          if (next !== task.status) onUpdateStatus(task, next);
+                        }}
                         disabled={busy}
                         className="rounded-full border border-transparent bg-zinc-900/0 px-2 py-1 text-xs font-medium text-zinc-100 ring-1 ring-zinc-700/60 hover:bg-zinc-900/40 focus:outline-none focus:ring-2 focus:ring-orange-500 disabled:opacity-60"
                       >
@@ -126,6 +163,7 @@ export const TaskTable = memo(function TaskTable({
                         <button
                           type="button"
                           onClick={() => onEdit(task)}
+                          aria-label={`Edit ${task.title}`}
                           className="inline-flex items-center gap-2 text-orange-400 hover:text-orange-300"
                         >
                           ✎ <span className="font-medium">Edit</span>
@@ -133,8 +171,9 @@ export const TaskTable = memo(function TaskTable({
                         <button
                           type="button"
                           onClick={() => {
-                            if (confirm("Delete this task?")) onDelete(task);
+                            setConfirmTask(task);
                           }}
+                          aria-label={`Delete ${task.title}`}
                           disabled={busy}
                           className="inline-flex items-center gap-2 text-red-300 hover:text-red-200 disabled:opacity-50"
                         >
@@ -195,6 +234,20 @@ export const TaskTable = memo(function TaskTable({
           </div>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={!!confirmTask}
+        title="Delete task?"
+        description={confirmTask ? `'${confirmTask.title}' will be removed permanently.` : undefined}
+        confirmLabel="Delete"
+        busy={busy}
+        onCancel={() => setConfirmTask(null)}
+        onConfirm={() => {
+          if (!confirmTask) return;
+          onDelete(confirmTask);
+          setConfirmTask(null);
+        }}
+      />
     </>
   );
 });
