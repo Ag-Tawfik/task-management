@@ -17,4 +17,3 @@ class AdminFactory extends Factory
         return User::factory()->admin()->definition();
     }
 }
-

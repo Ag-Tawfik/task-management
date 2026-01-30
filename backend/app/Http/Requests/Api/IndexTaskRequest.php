@@ -23,4 +23,3 @@ class IndexTaskRequest extends FormRequest
         ];
     }
 }
-

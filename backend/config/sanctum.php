@@ -54,4 +54,3 @@ return [
         'validate_csrf_token' => Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class,
     ],
 ];
-

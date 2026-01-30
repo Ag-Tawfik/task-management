@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\TaskStatusEnum;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\IndexTaskRequest;
 use App\Http\Requests\Api\StoreTaskRequest;
 use App\Http\Requests\Api\UpdateTaskRequest;
-use App\Enums\TaskStatusEnum;
 use App\Models\Task;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
