@@ -18,9 +18,9 @@ class AuthControllerTest extends TestCase
             ->withHeader('Origin', 'http://localhost:3000')
             ->withSession([])
             ->postJson('/api/auth/login', [
-            'email' => $user->email,
-            'password' => 'password',
-        ]);
+                'email' => $user->email,
+                'password' => 'password',
+            ]);
 
         $response->assertOk()->assertJsonPath('user.email', $user->email);
         $this->assertAuthenticatedAs($user);
@@ -82,6 +82,5 @@ class AuthControllerTest extends TestCase
             ->postJson('/api/auth/logout')
             ->assertOk()
             ->assertJson(['ok' => true]);
-
     }
 }
