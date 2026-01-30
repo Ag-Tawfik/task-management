@@ -26,4 +26,3 @@ class Login extends BaseLogin
         $this->form->fill();
     }
 }
-

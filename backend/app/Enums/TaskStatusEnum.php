@@ -16,4 +16,3 @@ enum TaskStatusEnum: string
         );
     }
 }
-

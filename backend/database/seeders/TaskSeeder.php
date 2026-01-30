@@ -22,4 +22,3 @@ class TaskSeeder extends Seeder
         }
     }
 }
-
